@@ -106,7 +106,7 @@ if %errorLevel% neq 0 (
 :: Auto-get WSL IP if not configured
 if "%WSL_IP%"=="" (
     echo [INFO] Auto-detecting WSL IP...
-    for /f "tokens=1" %%i in ('wsl -d "%WSL_DISTRO%" sh -c "hostname -I 2>/dev/null | awk '{print \$1}'" 2^>nul') do (
+    for /f "usebackq tokens=1" %%i in (`wsl -d "%WSL_DISTRO%" hostname -I 2^>nul`) do (
         set "WSL_IP=%%i"
     )
 )
