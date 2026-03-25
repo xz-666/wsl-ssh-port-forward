@@ -68,14 +68,12 @@ if exist "%CONFIG_FILE%" (
     )
 )
 
-:: Detect WSL distro
+:: Detect WSL distro using PowerShell (avoid encoding issues)
 if "%WSL_DISTRO%"=="" (
-    for /f "tokens=1" %%i in ('wsl -l -q 2^>nul') do (
+    for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "(wsl -l -q)[0].Trim()" 2^>nul`) do (
         set "WSL_DISTRO=%%i"
-        goto FOUND_DISTRO
     )
 )
-:FOUND_DISTRO
 
 if "%WSL_DISTRO%"=="" (
     echo [ERROR] No WSL distro found
@@ -103,26 +101,26 @@ if %errorLevel% neq 0 (
     timeout /t 2 /nobreak >nul
 )
 
-:: Auto-get WSL IP if not configured
+:: Auto-get WSL IP using PowerShell (avoid encoding issues)
 if "%WSL_IP%"=="" (
     echo [INFO] Detecting WSL IP addresses...
     echo.
-    echo Available IPs for %WSL_DISTRO%:
 
     set /a IP_COUNT=0
-    for /f "tokens=*" %%i in ('wsl -d "%WSL_DISTRO%" hostname -I 2^>nul') do (
-        set "IP_LIST=%%i"
-        for %%j in (%%i) do (
-            set /a IP_COUNT+=1
-            echo   !IP_COUNT!. %%j
-            set "IP_!IP_COUNT!=%%j"
-        )
+    for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "(wsl -d '%WSL_DISTRO%' hostname -I).Trim() -split '\s+'" 2^>nul`) do (
+        set /a IP_COUNT+=1
+        set "IP_!IP_COUNT!=%%i"
     )
 
     if !IP_COUNT! equ 0 (
         echo [ERROR] Failed to detect any IP
         pause
         exit /b 1
+    )
+
+    echo Available IPs for %WSL_DISTRO%:
+    for /l %%n in (1,1,!IP_COUNT!) do (
+        echo   %%n. !IP_%%n!
     )
 
     if !IP_COUNT! equ 1 (
