@@ -1,0 +1,20 @@
+# Logs
+*.log
+wsl-ssh-portforward.log
+
+# User configuration (keep example only)
+wsl-ssh-config.ini
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
