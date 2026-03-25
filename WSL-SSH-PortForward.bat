@@ -168,21 +168,30 @@ if !IP_COUNT! equ 1 (
 
 :: Get ZeroTier IP if available
 echo.
-echo [INFO] Checking for ZeroTier IP...
-set "ZEROTIER_IP="
-for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /i "ZeroTier"') do (
-    for /f "tokens=*" %%b in ("%%a") do (
-        set "ZEROTIER_IP=%%b"
-        set "ZEROTIER_IP=!ZEROTIER_IP: =!"
-        set "ZEROTIER_IP=!ZEROTIER_IP: =!"
-        set "ZEROTIER_IP=!ZEROTIER_IP: =!"
+echo.
+echo [INFO] ZeroTier IP Setup (Optional)
+echo.
+echo If you have ZeroTier installed, you can select it for remote access.
+echo Available IPs from the list above that might be ZeroTier:
+set /a ZT_COUNT=0
+for /l %%n in (1,1,!IP_COUNT!) do (
+    echo !IP_%%n! | findstr /r "^10\." >nul && (
+        set /a ZT_COUNT+=1
+        echo   !IP_%%n! (looks like ZeroTier)
+    )
+    echo !IP_%%n! | findstr /r "^26\." >nul && (
+        set /a ZT_COUNT+=1
+        echo   !IP_%%n! (looks like Radmin VPN)
     )
 )
-
-if not "!ZEROTIER_IP!"=="" (
-    echo [OK] ZeroTier IP detected: !ZEROTIER_IP!
+if !ZT_COUNT! gtr 0 (
+    echo.
+    set /p ZT_SELECT="Enter the ZeroTier IP from above (or press Enter to skip): "
+    if not "!ZT_SELECT!"=="" set "ZEROTIER_IP=!ZT_SELECT!"
 ) else (
-    echo [INFO] No ZeroTier IP detected
+    echo   No ZeroTier-like IPs detected.
+    echo   If you have ZeroTier, manually enter your Windows ZeroTier IP:
+    set /p ZEROTIER_IP="ZeroTier IP (or press Enter to skip): "
 )
 
 :: Save config
