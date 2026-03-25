@@ -66,9 +66,9 @@ On first run, the script will automatically:
 [INFO] Detecting WSL IP addresses...
 
 Available IP addresses:
-  1. 26.83.94.22
-  2. 172.28.222.176
-  3. 10.80.139.191
+  1. 192.168.1.100
+  2. 172.28.222.100
+  3. 10.0.0.50
 
 Please select the IP for SSH connection: 2
 
@@ -97,7 +97,7 @@ ssh xingzhan@127.0.0.1 -p 2222
 
 **Remote via ZeroTier:**
 ```bash
-ssh xingzhan@10.80.139.191 -p 2222
+ssh xingzhan@10.0.0.50 -p 2222
 ```
 
 **Remote via Windows IP:**
@@ -330,9 +330,9 @@ cd wsl-ssh-port-forward
 [INFO] Detecting WSL IP addresses...
 
 Available IP addresses:
-  1. 26.83.94.22
-  2. 172.28.222.176
-  3. 10.80.139.191
+  1. 192.168.1.100
+  2. 172.28.222.100
+  3. 10.0.0.50
 
 Please select the IP for SSH connection: 2
 
@@ -361,7 +361,7 @@ ssh xingzhan@127.0.0.1 -p 2222
 
 **通过 ZeroTier 远程连接：**
 ```bash
-ssh xingzhan@10.80.139.191 -p 2222
+ssh xingzhan@10.0.0.50 -p 2222
 ```
 
 **通过 Windows IP 远程连接：**
