@@ -126,12 +126,7 @@ echo [INFO] Detecting WSL IP addresses...
 echo.
 
 :: Use temp file to capture WSL output
-echo [DEBUG] Running: wsl -d %WSL_DISTRO% hostname -I
-wsl -d %WSL_DISTRO% hostname -I > "%TEMP%\wsl_ip_tmp.txt" 2>&1
-echo [DEBUG] Exit code: %errorLevel%
-
-type "%TEMP%\wsl_ip_tmp.txt"
-echo.
+wsl -d %WSL_DISTRO% hostname -I > "%TEMP%\wsl_ip_tmp.txt" 2>nul
 
 set /a IP_COUNT=0
 for /f "usebackq tokens=1-10" %%a in ("%TEMP%\wsl_ip_tmp.txt") do (
@@ -175,14 +170,14 @@ if !IP_COUNT! equ 1 (
 echo.
 echo [INFO] Checking for ZeroTier IP...
 set "ZEROTIER_IP="
-ipconfig > "%TEMP%\ipconfig_tmp.txt" 2>nul
-for /f "tokens=2 delims=:" %%a in ('findstr /i "zerotier" "%TEMP%\ipconfig_tmp.txt"') do (
+for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /i "ZeroTier"') do (
     for /f "tokens=*" %%b in ("%%a") do (
         set "ZEROTIER_IP=%%b"
         set "ZEROTIER_IP=!ZEROTIER_IP: =!"
+        set "ZEROTIER_IP=!ZEROTIER_IP: =!"
+        set "ZEROTIER_IP=!ZEROTIER_IP: =!"
     )
 )
-del "%TEMP%\ipconfig_tmp.txt" 2>nul
 
 if not "!ZEROTIER_IP!"=="" (
     echo [OK] ZeroTier IP detected: !ZEROTIER_IP!
