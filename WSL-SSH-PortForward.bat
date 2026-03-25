@@ -29,11 +29,30 @@ shift
 goto :PARSE_ARGS
 :ARGS_DONE
 
+:: Show title first (before any potential exit)
+title WSL SSH 端口转发
+cls
+echo ==============================================
+echo      WSL SSH 端口转发 + 智能保活
+echo ==============================================
+echo.
+
 :: Check admin
 net session >nul 2>&1
 if %errorLevel% neq 0 (
-    echo [ERROR] Please run as Administrator
-    echo Right-click the batch file and select "Run as administrator"
+    echo [错误] 权限不足
+    echo.
+    echo 本脚本需要管理员权限才能：
+    echo   - 创建端口转发规则
+    echo   - 配置 Windows 防火墙
+    echo.
+    echo 解决方法：
+    echo   1. 关闭此窗口
+    echo   2. 右键点击 WSL-SSH-PortForward.bat
+    echo   3. 选择【以管理员身份运行】
+    echo.
+    echo ==============================================
+    echo.
     pause
     exit /b 1
 )
@@ -62,8 +81,8 @@ if "%WSL_DISTRO%"=="" (
 :FOUND_DISTRO
 
 if "%WSL_DISTRO%"=="" (
-    echo [ERROR] No WSL distro found
-    echo Please install WSL: wsl --install
+    echo [错误] 未找到 WSL 发行版
+    echo 请先安装 WSL: wsl --install
     pause
     exit /b 1
 )
@@ -77,7 +96,7 @@ echo.
 :: Check WSL running
 wsl -d "%WSL_DISTRO%" -e echo test >nul 2>&1
 if %errorLevel% neq 0 (
-    echo [INFO] Starting WSL...
+    echo [信息] 正在启动 WSL...
     wsl -d "%WSL_DISTRO%" -e echo test >nul 2>&1
     timeout /t 2 /nobreak >nul
 )
@@ -90,14 +109,14 @@ if "%WSL_IP%"=="" (
 )
 
 if "%WSL_IP%"=="" (
-    echo [ERROR] Failed to get WSL IP
-    echo Please check: wsl -d %WSL_DISTRO% hostname -I
-    echo Or set WSL_IP manually in %CONFIG_FILE%
+    echo [错误] 获取 WSL IP 失败
+    echo 请检查: wsl -d %WSL_DISTRO% hostname -I
+    echo 或在 %CONFIG_FILE% 中手动设置 WSL_IP
     pause
     exit /b 1
 )
 
-echo [OK] WSL IP: %WSL_IP%
+echo [成功] WSL IP: %WSL_IP%
 
 :: Delete old rules
 netsh interface portproxy delete v4tov4 listenaddress=%LISTEN_ADDRESS% listenport=%LISTEN_PORT% >nul 2>&1
@@ -105,17 +124,17 @@ netsh interface portproxy delete v4tov4 listenaddress=%LISTEN_ADDRESS% listenpor
 :: Create port forward
 netsh interface portproxy add v4tov4 listenaddress=%LISTEN_ADDRESS% listenport=%LISTEN_PORT% connectaddress=%WSL_IP% connectport=%CONNECT_PORT% >nul 2>&1
 if %errorLevel% neq 0 (
-    echo [ERROR] Failed to create port forward
-    echo Check: netsh interface portproxy show all
+    echo [错误] 端口转发创建失败
+    echo 请检查: netsh interface portproxy show all
     pause
     exit /b 1
 )
 
-echo [OK] Port forward: %LISTEN_ADDRESS%:%LISTEN_PORT% -> %WSL_IP%:%CONNECT_PORT%
+echo [成功] 端口转发: %LISTEN_ADDRESS%:%LISTEN_PORT% -> %WSL_IP%:%CONNECT_PORT%
 
 :: Firewall
 netsh advfirewall firewall add rule name="WSL SSH %LISTEN_PORT%" dir=in action=allow protocol=TCP localport=%LISTEN_PORT% >nul 2>&1
-echo [OK] Firewall rule added
+echo [成功] 防火墙规则已添加
 
 :: Show info
 echo ==============================================
@@ -126,7 +145,7 @@ if not "%ZEROTIER_IP%"=="" (
 )
 echo Local:    ssh xingzhan@<Windows-IP> -p %LISTEN_PORT%
 echo.
-echo [Keep-Alive] Running... Close window to stop
+echo 【保活模式】运行中... 关闭此窗口将停止转发
 echo ==============================================
 
 :: Keep-alive loop
@@ -134,20 +153,23 @@ echo ==============================================
 timeout /t %CHECK_INTERVAL% /nobreak >nul
 netstat -ano | findstr ":%LISTEN_PORT%" >nul 2>&1
 if %errorLevel% neq 0 (
-    echo [%date% %time%] Port lost, rebuilding...
+    echo [%date% %time%] 端口丢失，正在重建...
     netsh interface portproxy delete v4tov4 listenaddress=%LISTEN_ADDRESS% listenport=%LISTEN_PORT% >nul 2>&1
     netsh interface portproxy add v4tov4 listenaddress=%LISTEN_ADDRESS% listenport=%LISTEN_PORT% connectaddress=%WSL_IP% connectport=%CONNECT_PORT% >nul 2>&1
-    echo [%date% %time%] Rebuilt
+    echo [%date% %time%] 重建完成
 )
 goto :LOOP
 
 :SHOW_HELP
-echo Usage: %~nx0 [-d distro] [-p port] [-z zerotier_ip]
+echo 用法: %~nx0 [-d 发行版] [-p 端口] [-z zerotier_ip]
 echo.
-echo Options:
-echo   -d    WSL distro name (default: auto-detect)
-echo   -p    Listen port (default: 2222)
-echo   -z    ZeroTier IP for display
+echo 选项:
+echo   -d    WSL 发行版名称 (默认: 自动检测)
+echo   -p    监听端口 (默认: 2222)
+echo   -z    ZeroTier IP 地址
+echo.
+echo 示例:
+echo   %~nx0 -d Ubuntu-22.04 -p 2222 -z YOUR_ZEROTIER_IP
 echo.
 pause
 exit /b 0
