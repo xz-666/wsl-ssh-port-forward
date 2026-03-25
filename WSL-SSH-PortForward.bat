@@ -103,23 +103,39 @@ if %errorLevel% neq 0 (
     timeout /t 2 /nobreak >nul
 )
 
-:: Get WSL IP - MUST be set in config file
+:: Auto-get WSL IP if not configured
 if "%WSL_IP%"=="" (
-    echo [ERROR] WSL_IP not configured
+    echo [INFO] Auto-detecting WSL IP...
+    for /f "tokens=1" %%i in ('wsl -d "%WSL_DISTRO%" sh -c "hostname -I 2>/dev/null | awk '{print \$1}'" 2^>nul') do (
+        set "WSL_IP=%%i"
+    )
+)
+
+if "%WSL_IP%"=="" (
+    echo [ERROR] Failed to auto-detect WSL IP
     echo.
-    echo Please edit: %CONFIG_FILE%
-    echo.
-    echo Add this line with your WSL IP:
+    echo Please manually set WSL_IP in: %CONFIG_FILE%
     echo   WSL_IP=172.28.xxx.xxx
     echo.
-    echo To find your WSL IP, run:
-    echo   wsl -d %WSL_DISTRO% hostname -I
-    echo.
+    echo Or check WSL status: wsl -d %WSL_DISTRO% hostname -I
     pause
     exit /b 1
 )
 
 echo [OK] WSL IP: %WSL_IP%
+
+:: Auto-get ZeroTier IP if not configured
+if "%ZEROTIER_IP%"=="" (
+    echo [INFO] Auto-detecting ZeroTier IP...
+    for /f "tokens=2 delims=:" %%i in ('ipconfig ^| findstr /i "zerotier"') do (
+        for /f "tokens=*" %%j in ("%%i") do (
+            set "ZEROTIER_IP=%%j"
+            set "ZEROTIER_IP=!ZEROTIER_IP: =!"
+            goto :ZEROTIER_FOUND
+        )
+    )
+)
+:ZEROTIER_FOUND
 
 :: Delete old rules
 netsh interface portproxy delete v4tov4 listenaddress=%LISTEN_ADDRESS% listenport=%LISTEN_PORT% >nul 2>&1
