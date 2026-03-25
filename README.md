@@ -29,11 +29,14 @@ A Windows batch script that automatically configures and maintains SSH port forw
 
 ### Features
 
-- **Automatic WSL Detection**: Auto-detects your WSL distribution or specify one manually
+- **First-Run Auto-Setup**: Automatically detects all available IPs and guides you through selection
+- **Interactive IP Selection**: Choose WSL IP and ZeroTier IP from detected addresses
+- **Configuration Persistence**: Saves settings to config file for subsequent runs
+- **Easy Reconfiguration**: Option to update settings on each run without editing files
+- **Automatic WSL Detection**: Auto-detects your WSL distribution
 - **Port Forwarding**: Forwards Windows ports to WSL SSH service
-- **Keep-Alive**: Monitors and automatically restores connection if WSL restarts or IP changes
-- **Flexible Configuration**: Use command-line arguments, config file, or both
-- **ZeroTier Support**: Optional display of ZeroTier IP for VPN connections
+- **Keep-Alive**: Monitors and automatically restores connection if WSL restarts
+- **ZeroTier Support**: Auto-detects and configures ZeroTier IP for remote access
 - **Firewall Management**: Automatically configures Windows Firewall rules
 - **Logging**: Detailed operation logs for troubleshooting
 
@@ -46,30 +49,60 @@ git clone https://github.com/xz-666/wsl-ssh-port-forward.git
 cd wsl-ssh-port-forward
 ```
 
-#### 2. Configure (Optional)
-
-Copy the example config and customize:
-
-```bash
-copy wsl-ssh-config.example.ini wsl-ssh-config.ini
-```
-
-Edit `wsl-ssh-config.ini` with your settings.
-
-#### 3. Run as Administrator
+#### 2. Run as Administrator
 
 Right-click `WSL-SSH-PortForward.bat` → **Run as administrator**
 
-Or from command prompt (as admin):
+#### 3. First Run Setup (Auto-Detection)
 
-```cmd
-WSL-SSH-PortForward.bat
+On first run, the script will automatically:
+- Detect your WSL distribution
+- Scan available IP addresses
+- Let you select the WSL IP (usually 172.x.x.x)
+- Let you select the ZeroTier IP (optional, for remote access)
+- Save configuration for future runs
+
+```
+[INFO] Detecting WSL IP addresses...
+
+Available IP addresses:
+  1. 26.83.94.22
+  2. 172.28.222.176
+  3. 10.80.139.191
+
+Please select the IP for SSH connection: 2
+
+[INFO] ZeroTier IP Setup (Optional)
+...
+Enter the number of the ZeroTier IP from the list above: 3
+
+[INFO] Saving configuration...
+[OK] Configuration saved to: wsl-ssh-config.ini
 ```
 
-#### 4. Connect via SSH
+#### 4. Subsequent Runs
 
+After the first run, configuration is saved. The script will:
+- Show current settings
+- Ask if you want to use existing config or reconfigure
+- Use existing config: Press Enter or type `1`
+- Reconfigure: Type `2` to detect and select new IPs
+
+#### 5. Connect via SSH
+
+**Local (same machine):**
 ```bash
-ssh your-username@<windows-ip> -p 2222
+ssh xingzhan@127.0.0.1 -p 2222
+```
+
+**Remote via ZeroTier:**
+```bash
+ssh xingzhan@10.80.139.191 -p 2222
+```
+
+**Remote via Windows IP:**
+```bash
+ssh xingzhan@<windows-lan-ip> -p 2222
 ```
 
 ### Configuration
@@ -260,11 +293,14 @@ Windows 电脑（家里/公司）
 
 ### 功能特性
 
-- **自动检测 WSL**: 自动发现你的 WSL 发行版，或手动指定
+- **首次运行自动配置**: 自动检测所有可用 IP 并引导选择
+- **交互式 IP 选择**: 从检测到的地址中选择 WSL IP 和 ZeroTier IP
+- **配置持久化**: 将设置保存到配置文件供后续使用
+- **轻松重新配置**: 每次运行可选择更新设置，无需手动编辑文件
+- **自动检测 WSL**: 自动发现你的 WSL 发行版
 - **端口转发**: 将 Windows 端口转发到 WSL SSH 服务
-- **智能保活**: 监控连接状态，WSL 重启或 IP 变化时自动恢复
-- **灵活配置**: 支持命令行参数、配置文件或两者结合
-- **ZeroTier 支持**: 可选显示 ZeroTier IP，方便 VPN 连接
+- **智能保活**: 监控连接状态，WSL 重启时自动恢复
+- **ZeroTier 支持**: 自动检测并配置 ZeroTier IP 用于远程访问
 - **防火墙管理**: 自动配置 Windows 防火墙规则
 - **日志记录**: 详细的操作日志，便于故障排查
 
@@ -277,30 +313,60 @@ git clone https://github.com/xz-666/wsl-ssh-port-forward.git
 cd wsl-ssh-port-forward
 ```
 
-#### 2. 配置（可选）
-
-复制示例配置文件并进行自定义：
-
-```bash
-copy wsl-ssh-config.example.ini wsl-ssh-config.ini
-```
-
-编辑 `wsl-ssh-config.ini` 设置你的参数。
-
-#### 3. 以管理员身份运行
+#### 2. 以管理员身份运行
 
 右键 `WSL-SSH-PortForward.bat` → **以管理员身份运行**
 
-或在命令提示符中（管理员）：
+#### 3. 首次运行设置（自动检测）
 
-```cmd
-WSL-SSH-PortForward.bat
+首次运行时，脚本会自动：
+- 检测你的 WSL 发行版
+- 扫描可用 IP 地址
+- 让你选择 WSL IP（通常是 172.x.x.x）
+- 让你选择 ZeroTier IP（可选，用于远程访问）
+- 保存配置供后续使用
+
+```
+[INFO] Detecting WSL IP addresses...
+
+Available IP addresses:
+  1. 26.83.94.22
+  2. 172.28.222.176
+  3. 10.80.139.191
+
+Please select the IP for SSH connection: 2
+
+[INFO] ZeroTier IP Setup (Optional)
+...
+Enter the number of the ZeroTier IP from the list above: 3
+
+[INFO] Saving configuration...
+[OK] Configuration saved to: wsl-ssh-config.ini
 ```
 
-#### 4. 通过 SSH 连接
+#### 4. 后续运行
 
+首次运行后，配置已保存。脚本会：
+- 显示当前设置
+- 询问使用现有配置还是重新配置
+- 使用现有配置：按回车或输入 `1`
+- 重新配置：输入 `2` 检测并选择新 IP
+
+#### 5. 通过 SSH 连接
+
+**本地（同一台机器）：**
 ```bash
-ssh 你的用户名@<windows-ip> -p 2222
+ssh xingzhan@127.0.0.1 -p 2222
+```
+
+**通过 ZeroTier 远程连接：**
+```bash
+ssh xingzhan@10.80.139.191 -p 2222
+```
+
+**通过 Windows IP 远程连接：**
+```bash
+ssh xingzhan@<windows-lan-ip> -p 2222
 ```
 
 ### 配置说明
