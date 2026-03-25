@@ -68,16 +68,8 @@ if exist "%CONFIG_FILE%" (
     )
 )
 
-:: Detect WSL distro using PowerShell (handles encoding)
-if "%WSL_DISTRO%"=="" (
-    for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "$out = wsl -l -q 2>$$null; if ($$out) { $$out.Split()[0].Trim() }"`) do (
-        if not "%%i"=="" (
-            set "WSL_DISTRO=%%i"
-            goto :FOUND_DISTRO
-        )
-    )
-)
-:FOUND_DISTRO
+:: Detect WSL distro - try Ubuntu-22.04 first, then auto-detect
+if "%WSL_DISTRO%"=="" set "WSL_DISTRO=Ubuntu-22.04"
 
 if "%WSL_DISTRO%"=="" (
     echo [ERROR] No WSL distro found
