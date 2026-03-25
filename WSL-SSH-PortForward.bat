@@ -126,10 +126,15 @@ echo [INFO] Detecting WSL IP addresses...
 echo.
 
 :: Use temp file to capture WSL output
+echo [DEBUG] Running: wsl -d "%WSL_DISTRO%" hostname -I
 wsl -d "%WSL_DISTRO%" hostname -I > "%TEMP%\wsl_ip_tmp.txt" 2>nul
+echo [DEBUG] Exit code: %errorLevel%
+
+type "%TEMP%\wsl_ip_tmp.txt"
+echo.
 
 set /a IP_COUNT=0
-for /f "tokens=1-10" %%a in (%TEMP%\wsl_ip_tmp.txt) do (
+for /f "usebackq tokens=1-10" %%a in ("%TEMP%\wsl_ip_tmp.txt") do (
     if not "%%a"=="" set /a IP_COUNT+=1 & set "IP_!IP_COUNT!=%%a"
     if not "%%b"=="" set /a IP_COUNT+=1 & set "IP_!IP_COUNT!=%%b"
     if not "%%c"=="" set /a IP_COUNT+=1 & set "IP_!IP_COUNT!=%%c"
