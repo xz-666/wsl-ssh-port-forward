@@ -110,6 +110,30 @@ if "%WSL_IP%"=="" (
     goto :FIRST_RUN_SETUP
 )
 
+:: Config exists - ask user what to do
+echo.
+echo ==============================================
+echo Configuration Found
+echo ==============================================
+echo.
+echo Current settings:
+echo   WSL Distro: %WSL_DISTRO%
+echo   WSL IP:     %WSL_IP%
+if not "%ZEROTIER_IP%"=="" echo   ZeroTier:   %ZEROTIER_IP%
+echo.
+echo Options:
+echo   1. Use existing configuration (default)
+echo   2. Reconfigure - detect and select new IPs
+echo.
+set /p USE_CONFIG="Select option (1-2, press Enter for 1): "
+if "%USE_CONFIG%"=="2" (
+    echo.
+    echo [INFO] Reconfiguring...
+    set "WSL_IP="
+    set "ZEROTIER_IP="
+    goto :FIRST_RUN_SETUP
+)
+
 goto :CONFIG_DONE
 
 :FIRST_RUN_SETUP
