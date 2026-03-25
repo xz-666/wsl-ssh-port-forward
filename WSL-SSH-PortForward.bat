@@ -68,11 +68,10 @@ if exist "%CONFIG_FILE%" (
     )
 )
 
-:: Detect WSL distro
+:: Detect WSL distro using PowerShell (handles encoding)
 if "%WSL_DISTRO%"=="" (
-    wsl -l -q >nul 2>nul
-    if !errorLevel! equ 0 (
-        for /f "tokens=*" %%i in ('wsl -l -q 2^>nul') do (
+    for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "$out = wsl -l -q 2>$$null; if ($$out) { $$out.Split()[0].Trim() }"`) do (
+        if not "%%i"=="" (
             set "WSL_DISTRO=%%i"
             goto :FOUND_DISTRO
         )
