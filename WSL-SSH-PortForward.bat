@@ -68,12 +68,17 @@ if exist "%CONFIG_FILE%" (
     )
 )
 
-:: Detect WSL distro using PowerShell (avoid encoding issues)
+:: Detect WSL distro using temp file (avoid encoding issues)
 if "%WSL_DISTRO%"=="" (
-    for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "(wsl -l -q)[0].Trim()" 2^>nul`) do (
+    wsl -l -q > "%TEMP%\wsl_list.txt" 2>nul
+    for /f "tokens=*" %%i in (%TEMP%\wsl_list.txt) do (
         set "WSL_DISTRO=%%i"
+        del "%TEMP%\wsl_list.txt" 2>nul
+        goto :FOUND_DISTRO
     )
+    del "%TEMP%\wsl_list.txt" 2>nul
 )
+:FOUND_DISTRO
 
 if "%WSL_DISTRO%"=="" (
     echo [ERROR] No WSL distro found
@@ -101,41 +106,109 @@ if %errorLevel% neq 0 (
     timeout /t 2 /nobreak >nul
 )
 
-:: Auto-get WSL IP using PowerShell (avoid encoding issues)
-if "%WSL_IP%"=="" (
-    echo [INFO] Detecting WSL IP addresses...
-    echo.
-
-    set /a IP_COUNT=0
-    for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "(wsl -d '%WSL_DISTRO%' hostname -I).Trim() -split '\s+'" 2^>nul`) do (
-        set /a IP_COUNT+=1
-        set "IP_!IP_COUNT!=%%i"
-    )
-
-    if !IP_COUNT! equ 0 (
-        echo [ERROR] Failed to detect any IP
-        pause
-        exit /b 1
-    )
-
-    echo Available IPs for %WSL_DISTRO%:
-    for /l %%n in (1,1,!IP_COUNT!) do (
-        echo   %%n. !IP_%%n!
-    )
-
-    if !IP_COUNT! equ 1 (
-        set "WSL_IP=!IP_1!"
-        echo.
-        echo [OK] Auto-selected: !WSL_IP!
-    ) else (
-        echo.
-        echo Multiple IPs found. Please select the correct one:
-        echo   - Usually the 172.x.x.x or 192.168.x.x for local network
-        set /p IP_SELECT="Enter number (1-!IP_COUNT!): "
-        set "WSL_IP=!IP_%IP_SELECT%!"
-    )
-    echo.
+:: First run setup - check if config exists
+if not exist "%CONFIG_FILE%" (
+    goto :FIRST_RUN_SETUP
 )
+
+:: Read existing config
+call :LOAD_CONFIG
+
+:: If WSL_IP still not set, do first run setup
+if "%WSL_IP%"=="" (
+    goto :FIRST_RUN_SETUP
+)
+
+goto :CONFIG_DONE
+
+:FIRST_RUN_SETUP
+echo ==============================================
+echo First Run Setup
+echo ==============================================
+echo.
+echo This appears to be your first time running this script.
+echo Let's configure it for your system.
+echo.
+
+:: Get WSL IP using temp file to avoid encoding issues
+echo [INFO] Detecting WSL IP addresses...
+echo.
+
+:: Use temp file to capture WSL output
+wsl -d "%WSL_DISTRO%" hostname -I > "%TEMP%\wsl_ip_tmp.txt" 2>nul
+
+set /a IP_COUNT=0
+for /f "tokens=1-10" %%a in (%TEMP%\wsl_ip_tmp.txt) do (
+    if not "%%a"=="" set /a IP_COUNT+=1 & set "IP_!IP_COUNT!=%%a"
+    if not "%%b"=="" set /a IP_COUNT+=1 & set "IP_!IP_COUNT!=%%b"
+    if not "%%c"=="" set /a IP_COUNT+=1 & set "IP_!IP_COUNT!=%%c"
+    if not "%%d"=="" set /a IP_COUNT+=1 & set "IP_!IP_COUNT!=%%d"
+    if not "%%e"=="" set /a IP_COUNT+=1 & set "IP_!IP_COUNT!=%%e"
+    if not "%%f"=="" set /a IP_COUNT+=1 & set "IP_!IP_COUNT!=%%f"
+)
+
+del "%TEMP%\wsl_ip_tmp.txt" 2>nul
+
+if !IP_COUNT! equ 0 (
+    echo [ERROR] Failed to detect WSL IP
+    echo.
+    echo Please check that WSL is running:
+    echo   wsl -d %WSL_DISTRO% hostname -I
+    pause
+    exit /b 1
+)
+
+echo Available IP addresses:
+for /l %%n in (1,1,!IP_COUNT!) do (
+    echo   %%n. !IP_%%n!
+)
+echo.
+
+if !IP_COUNT! equ 1 (
+    set "WSL_IP=!IP_1!"
+    echo [OK] Auto-selected: !WSL_IP!
+) else (
+    echo Please select the IP for SSH connection:
+    echo   (Usually the 172.x.x.x for WSL internal network)
+    echo.
+    set /p IP_SELECT="Enter number (1-!IP_COUNT!): "
+    set "WSL_IP=!IP_%IP_SELECT%!"
+)
+
+:: Get ZeroTier IP if available
+echo.
+echo [INFO] Checking for ZeroTier IP...
+set "ZEROTIER_IP="
+ipconfig > "%TEMP%\ipconfig_tmp.txt" 2>nul
+for /f "tokens=2 delims=:" %%a in ('findstr /i "zerotier" "%TEMP%\ipconfig_tmp.txt"') do (
+    for /f "tokens=*" %%b in ("%%a") do (
+        set "ZEROTIER_IP=%%b"
+        set "ZEROTIER_IP=!ZEROTIER_IP: =!"
+    )
+)
+del "%TEMP%\ipconfig_tmp.txt" 2>nul
+
+if not "!ZEROTIER_IP!"=="" (
+    echo [OK] ZeroTier IP detected: !ZEROTIER_IP!
+) else (
+    echo [INFO] No ZeroTier IP detected
+)
+
+:: Save config
+echo.
+echo [INFO] Saving configuration...
+echo # WSL SSH Port Forward Configuration > "%CONFIG_FILE%"
+echo WSL_DISTRO=%WSL_DISTRO% >> "%CONFIG_FILE%"
+echo WSL_IP=%WSL_IP% >> "%CONFIG_FILE%"
+if not "!ZEROTIER_IP!"=="" (
+    echo ZEROTIER_IP=!ZEROTIER_IP! >> "%CONFIG_FILE%"
+)
+echo LISTEN_PORT=2222 >> "%CONFIG_FILE%"
+echo [OK] Configuration saved to: %CONFIG_FILE%
+echo.
+pause
+
+:CONFIG_DONE
 
 if "%WSL_IP%"=="" (
     echo [ERROR] Failed to auto-detect WSL IP
@@ -149,19 +222,6 @@ if "%WSL_IP%"=="" (
 )
 
 echo [OK] WSL IP: %WSL_IP%
-
-:: Auto-get ZeroTier IP if not configured
-if "%ZEROTIER_IP%"=="" (
-    echo [INFO] Auto-detecting ZeroTier IP...
-    for /f "tokens=2 delims=:" %%i in ('ipconfig ^| findstr /i "zerotier"') do (
-        for /f "tokens=*" %%j in ("%%i") do (
-            set "ZEROTIER_IP=%%j"
-            set "ZEROTIER_IP=!ZEROTIER_IP: =!"
-            goto :ZEROTIER_FOUND
-        )
-    )
-)
-:ZEROTIER_FOUND
 
 :: Delete old rules
 netsh interface portproxy delete v4tov4 listenaddress=%LISTEN_ADDRESS% listenport=%LISTEN_PORT% >nul 2>&1
@@ -211,6 +271,20 @@ if %errorLevel% neq 0 (
     echo [%date% %time%] Rebuilt
 )
 goto LOOP
+
+:LOAD_CONFIG
+if not exist "%CONFIG_FILE%" goto :EOF
+for /f "usebackq tokens=1,2 delims==" %%a in ("%CONFIG_FILE%") do (
+    set "key=%%a"
+    set "val=%%b"
+    for /f "tokens=*" %%k in ("!key!") do set "key=%%k"
+    for /f "tokens=*" %%v in ("!val!") do set "val=%%v"
+    if /i "!key!"=="WSL_DISTRO" set "WSL_DISTRO=!val!"
+    if /i "!key!"=="WSL_IP" set "WSL_IP=!val!"
+    if /i "!key!"=="LISTEN_PORT" set "LISTEN_PORT=!val!"
+    if /i "!key!"=="ZEROTIER_IP" set "ZEROTIER_IP=!val!"
+)
+goto :EOF
 
 :SHOW_HELP
 echo Usage: %~nx0 [-d distro] [-p port] [-z zerotier_ip]
