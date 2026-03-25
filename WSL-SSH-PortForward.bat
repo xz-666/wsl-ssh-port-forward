@@ -96,17 +96,16 @@ if %errorLevel% neq 0 (
     timeout /t 2 /nobreak >nul
 )
 
-:: Get WSL IP
+:: Get WSL IP - use config file first, avoid encoding issues
 if "%WSL_IP%"=="" (
-    for /f "tokens=1" %%i in ('wsl -d "%WSL_DISTRO%" hostname -I 2^>nul') do (
-        set WSL_IP=%%i
-    )
-)
-
-if "%WSL_IP%"=="" (
-    echo [ERROR] Failed to get WSL IP
-    echo Check: wsl -d %WSL_DISTRO% hostname -I
-    echo Or set WSL_IP in %CONFIG_FILE%
+    echo [ERROR] WSL_IP not set in config file
+    echo.
+    echo Please edit %CONFIG_FILE% and add:
+    echo   WSL_IP=your_wsl_ip
+    echo.
+    echo You can get your WSL IP by running:
+    echo   wsl -d %WSL_DISTRO% hostname -I
+    echo.
     pause
     exit /b 1
 )
