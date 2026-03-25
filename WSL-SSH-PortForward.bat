@@ -459,20 +459,20 @@ if not "%WSL_IP%"=="" (
 )
 :: Otherwise, try to auto-detect
 :: Method 1: Use PowerShell to execute WSL command (avoids encoding issues)
-for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "$ip = (wsl -d '%WSL_DISTRO%' hostname -I).Trim().Split(' ')[0]; if ($ip -match '^\d+\.\d+\.\d+\.\d+$') { Write-Output $ip }" 2^>nul`) do (
+for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "$ip = (wsl -d '%WSL_DISTRO%' hostname -I).Trim().Split(' ')[0]; if ($$ip -match '^\d+\.\d+\.\d+\.\d+$$') { Write-Output $$ip }" 2^>nul`) do (
     set "WSL_IP=%%i"
     if not "!WSL_IP!"=="" goto :GOT_IP
 )
 :: Method 2: Direct WSL with ip command
 if "%WSL_IP%"=="" (
-    for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "$ip = (wsl -d '%WSL_DISTRO%' sh -c 'ip route get 1.1.1.1 2>/dev/null' | Select-String -Pattern 'src\s+(\d+\.\d+\.\d+\.\d+)' | ForEach-Object { $_.Matches.Groups[1].Value }).Trim(); if ($ip -match '^\d+\.\d+\.\d+\.\d+$') { Write-Output $ip }" 2^>nul`) do (
+    for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "$ip = (wsl -d '%WSL_DISTRO%' sh -c 'ip route get 1.1.1.1 2>/dev/null' | Select-String -Pattern 'src\s+(\d+\.\d+\.\d+\.\d+)' | ForEach-Object { $$_.Matches.Groups[1].Value }).Trim(); if ($$ip -match '^\d+\.\d+\.\d+\.\d+$$') { Write-Output $$ip }" 2^>nul`) do (
         set "WSL_IP=%%i"
         if not "!WSL_IP!"=="" goto :GOT_IP
     )
 )
 :: Method 3: Fallback to WSL2 default gateway pattern
 if "%WSL_IP%"=="" (
-    for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "$ip = (wsl -d '%WSL_DISTRO%' cat /etc/resolv.conf 2>$null | Select-String -Pattern 'nameserver\s+(\d+\.\d+\.\d+\.\d+)' | Select-Object -First 1 | ForEach-Object { $_.Matches.Groups[1].Value }).Trim(); $ip -replace '172\.\d+\.\d+\.1', ($ip -replace '\.1$', '.2'); if ($ip -match '^\d+\.\d+\.\d+\.\d+$') { Write-Output $ip }" 2^>nul`) do (
+    for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "$ip = (wsl -d '%WSL_DISTRO%' cat /etc/resolv.conf 2^>$$null | Select-String -Pattern 'nameserver\s+(\d+\.\d+\.\d+\.\d+)' | Select-Object -First 1 | ForEach-Object { $$_.Matches.Groups[1].Value }).Trim(); $$ip -replace '172\.\d+\.\d+\.1', ($$ip -replace '\.1$', '.2'); if ($$ip -match '^\d+\.\d+\.\d+\.\d+$$') { Write-Output $$ip }" 2^>nul`) do (
         set "WSL_IP=%%i"
     )
 )
@@ -480,7 +480,7 @@ if "%WSL_IP%"=="" (
 :: Clean up any spaces
 for /f "tokens=*" %%a in ("!WSL_IP!") do set "WSL_IP=%%a"
 :: Validate IP format
-powershell -NoProfile -Command "if ('%WSL_IP%' -notmatch '^\d+\.\d+\.\d+\.\d+$') { exit 1 }" 2>nul
+powershell -NoProfile -Command "if ('%WSL_IP%' -notmatch '^\d+\.\d+\.\d+\.\d+$$') { exit 1 }" 2>nul
 if %errorLevel% neq 0 (
     set "WSL_IP="
 )
