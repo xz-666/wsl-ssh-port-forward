@@ -104,19 +104,14 @@ if %errorLevel% neq 0 (
 )
 
 :: Auto-get WSL IP if not configured
-:: Use ip route to get the source IP for external traffic (usually eth0)
 if "%WSL_IP%"=="" (
     echo [INFO] Auto-detecting WSL IP...
-    for /f "usebackq tokens=*" %%i in (`wsl -d "%WSL_DISTRO%" sh -c "ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K[0-9.]+'" 2^>nul`) do (
+    for /f "tokens=2" %%i in ('wsl -d "%WSL_DISTRO%" hostname -I 2^>nul') do (
         set "WSL_IP=%%i"
+        goto :WSL_IP_DONE
     )
 )
-:: Fallback: try to get second IP from hostname -I (usually 172.x range)
-if "%WSL_IP%"=="" (
-    for /f "usebackq tokens=2" %%i in (`wsl -d "%WSL_DISTRO%" hostname -I 2^>nul`) do (
-        set "WSL_IP=%%i"
-    )
-)
+:WSL_IP_DONE
 
 if "%WSL_IP%"=="" (
     echo [ERROR] Failed to auto-detect WSL IP
