@@ -68,15 +68,15 @@ if exist "%CONFIG_FILE%" (
     )
 )
 
-:: Detect WSL distro using temp file (avoid encoding issues)
+:: Detect WSL distro
 if "%WSL_DISTRO%"=="" (
-    wsl -l -q > "%TEMP%\wsl_list.txt" 2>nul
-    for /f "tokens=*" %%i in (%TEMP%\wsl_list.txt) do (
-        set "WSL_DISTRO=%%i"
-        del "%TEMP%\wsl_list.txt" 2>nul
-        goto :FOUND_DISTRO
+    wsl -l -q >nul 2>nul
+    if !errorLevel! equ 0 (
+        for /f "tokens=*" %%i in ('wsl -l -q 2^>nul') do (
+            set "WSL_DISTRO=%%i"
+            goto :FOUND_DISTRO
+        )
     )
-    del "%TEMP%\wsl_list.txt" 2>nul
 )
 :FOUND_DISTRO
 
