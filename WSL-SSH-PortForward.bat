@@ -105,13 +105,39 @@ if %errorLevel% neq 0 (
 
 :: Auto-get WSL IP if not configured
 if "%WSL_IP%"=="" (
-    echo [INFO] Auto-detecting WSL IP...
-    for /f "tokens=2" %%i in ('wsl -d "%WSL_DISTRO%" hostname -I 2^>nul') do (
-        set "WSL_IP=%%i"
-        goto :WSL_IP_DONE
+    echo [INFO] Detecting WSL IP addresses...
+    echo.
+    echo Available IPs for %WSL_DISTRO%:
+
+    set /a IP_COUNT=0
+    for /f "tokens=*" %%i in ('wsl -d "%WSL_DISTRO%" hostname -I 2^>nul') do (
+        set "IP_LIST=%%i"
+        for %%j in (%%i) do (
+            set /a IP_COUNT+=1
+            echo   !IP_COUNT!. %%j
+            set "IP_!IP_COUNT!=%%j"
+        )
     )
+
+    if !IP_COUNT! equ 0 (
+        echo [ERROR] Failed to detect any IP
+        pause
+        exit /b 1
+    )
+
+    if !IP_COUNT! equ 1 (
+        set "WSL_IP=!IP_1!"
+        echo.
+        echo [OK] Auto-selected: !WSL_IP!
+    ) else (
+        echo.
+        echo Multiple IPs found. Please select the correct one:
+        echo   - Usually the 172.x.x.x or 192.168.x.x for local network
+        set /p IP_SELECT="Enter number (1-!IP_COUNT!): "
+        set "WSL_IP=!IP_%IP_SELECT%!"
+    )
+    echo.
 )
-:WSL_IP_DONE
 
 if "%WSL_IP%"=="" (
     echo [ERROR] Failed to auto-detect WSL IP
