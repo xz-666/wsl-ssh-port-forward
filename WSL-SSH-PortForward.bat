@@ -210,8 +210,13 @@ for /l %%n in (1,1,!IP_COUNT!) do (
 )
 if !ZT_COUNT! gtr 0 (
     echo.
-    set /p ZT_SELECT="Enter the ZeroTier IP from above (or press Enter to skip): "
-    if not "!ZT_SELECT!"=="" set "ZEROTIER_IP=!ZT_SELECT!"
+    echo Enter the number of the ZeroTier IP from the list above
+    set /p ZT_NUM="(or press Enter to skip): "
+    if not "!ZT_NUM!"=="" (
+        for /l %%n in (1,1,!IP_COUNT!) do (
+            if "!ZT_NUM!"=="%%n" set "ZEROTIER_IP=!IP_%%n!"
+        )
+    )
 ) else (
     echo   No ZeroTier-like IPs detected.
     echo   If you have ZeroTier, manually enter your Windows ZeroTier IP:
