@@ -90,10 +90,10 @@ echo WSL Distro: %WSL_DISTRO%
 echo.
 
 :: Check WSL running
-wsl -d "%WSL_DISTRO%" -e echo test >nul 2>&1
+wsl -d %WSL_DISTRO% -e echo test >nul 2>&1
 if %errorLevel% neq 0 (
     echo [INFO] Starting WSL...
-    wsl -d "%WSL_DISTRO%" -e echo test >nul 2>&1
+    wsl -d %WSL_DISTRO% -e echo test >nul 2>&1
     timeout /t 2 /nobreak >nul
 )
 
@@ -126,8 +126,8 @@ echo [INFO] Detecting WSL IP addresses...
 echo.
 
 :: Use temp file to capture WSL output
-echo [DEBUG] Running: wsl -d "%WSL_DISTRO%" hostname -I
-wsl -d "%WSL_DISTRO%" hostname -I > "%TEMP%\wsl_ip_tmp.txt" 2>nul
+echo [DEBUG] Running: wsl -d %WSL_DISTRO% hostname -I
+wsl -d %WSL_DISTRO% hostname -I > "%TEMP%\wsl_ip_tmp.txt" 2>&1
 echo [DEBUG] Exit code: %errorLevel%
 
 type "%TEMP%\wsl_ip_tmp.txt"
